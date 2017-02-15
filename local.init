@@ -1,0 +1,33 @@
+#!/bin/bash
+#
+# Author: Panda
+# Update: 20160816
+#
+# backup
+#
+
+DIR=$(cd `dirname $0`;echo $PWD)
+
+if [ $DIR != '/ROOT/BACKUP' ];then
+	echo "run this @/ROOT/BACKUP,First run:"
+	echo "cd /ROOT && svn co http://svn.noc.hexun.com/panda/scripts/BACKUP"
+	exit 2
+fi
+
+## init rsync
+cd $DIR/rsync && sh rsync.init
+cd -
+
+## crontab
+CRON=/etc/cron.d/snap
+SCRIPT=$DIR/snapshot/snap.sh 
+if ! grep -q "$SCRIPT" $CRON &> /dev/null;then
+	cat >> $CRON << EOF
+# snaphost backup
+30 12 * * * root $SCRIPT
+EOF
+fi
+
+## notify where to add backup srcs
+echo -e "\e[1;32m$DIR/snapshot/snap_files_from.list\e[0m:One line one dierctory or one file to backup"
+echo -e "\e[1;32m$DIR/snapshot/snap_exclude.list\e[0m:One line one dierctory or one file \e[33mexclude\e[0m"

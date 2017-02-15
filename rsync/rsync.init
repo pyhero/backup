@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+# Author: Panda
+# Update: 20160816
+#
+# Add backup rsync DIR
+#
+
+DIR=$(cd `dirname $0`;echo $PWD)
+
+## rsync servivr
+yum install rsync xinetd -y -q
+RSYNC_CONF="/etc/xinetd.d/rsync"
+if [ ! -f $RSYNC_CONF ];then
+	rsync -az $DIR/rsync $RSYNC_CONF
+else
+	sed -i '/disable/s/yes/no/' $RSYNC_CONF
+fi
+
+## sync config
+drf=/etc/rsyncd.conf
+srf=$DIR/rsyncd.conf
+if [ -f $drf -a $(grep -q "BACKUP/snapshot" $drf &> /dev/null | wc -l) -gt 0 ];then
+cat >> $drf << EOF
+
+[BACKUP]
+path            = /ROOT/BACKUP/snapshot
+hosts allow     = 127.0.0.1,10.0.0.1
+read only       = no
+EOF
+else
+	rsync -avz $srf $drf > /dev/null
+fi
+
+## reload service
+if cat /etc/redhat-release | egrep -qi '(release 5\.|release 6\.|release 4\.)';then
+	/etc/init.d/xinetd restart > /dev/null
+else
+	systemctl restart xinetd.service
+fi

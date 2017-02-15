@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Author: Panda
+# Update: 20160816
+#
+# Backup storage
+#
+
+DIR=$(cd `dirname $0`;echo $PWD)
+
+if [ $DIR != '/ROOT/BACKUP' ];then
+	echo "run this @/ROOT/BACKUP,First run:"
+	echo "cd /ROOT && svn co http://svn.noc.hexun.com/panda/scripts/BACKUP"
+	exit 2
+fi
+
+## init rsync
+cd $DIR/rsync && sh rsync.init
+cd -
+
+## crontab
+CRON=/etc/cron.d/snap
+SCRIPT=$DIR/sync_backup/dosync.sh
+if ! grep -q "$SCRIPT" $CRON &> /dev/null;then
+	cat >> $CRON << EOF
+# snaphost storage
+0 2 * * * root $SCRIPT
+EOF
+fi
+
+## notify where to add backup srcs
+echo -e "\e[1;32m$DIR/sync_backup/config\e[0m:One line one (ip rsync_dir) to pull ip's backup"
